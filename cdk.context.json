@@ -1,0 +1,18 @@
+{
+  "@aws-cdk/core:enableStackNameDuplicates": "true",
+  "aws-cdk:enableDiffNoFail": "true",
+  "availability-zones:account=865200059792:region=ap-northeast-2": [
+    "ap-northeast-2a",
+    "ap-northeast-2b",
+    "ap-northeast-2c"
+  ],
+  "availability-zones:account=865200059792:region=us-west-1": [
+    "us-west-1b",
+    "us-west-1c"
+  ],
+  "availability-zones:account=865200059792:region=ap-northeast-1": [
+    "ap-northeast-1a",
+    "ap-northeast-1c",
+    "ap-northeast-1d"
+  ]
+}
