@@ -1,10 +1,10 @@
 import * as cdk from '@aws-cdk/core';
-import { ContainerProps } from './cluster-stack';
+import { CommonProps } from './cluster-stack';
 import * as fs from 'fs';
 import * as yaml from 'js-yaml';
 
 export class ContainerStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: ContainerProps) {
+  constructor(scope: cdk.Construct, id: string, props: CommonProps) {
     super(scope, id, props);
 
     const stable = 'https://kubernetes-charts.storage.googleapis.com/';

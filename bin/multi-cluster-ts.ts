@@ -8,8 +8,9 @@ import { CicdForAppStack } from '../lib/cicd-for-app-stack';
 const app = new cdk.App();
 
 const environments = [
-    { account: '865200059792', region: 'ap-northeast-1' },
-    // { account: '865200059792', region: 'us-west-1' },
+    { account: app.node.tryGetContext('account') || process.env.CDK_INTEG_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT, 
+    region: 'ap-northeast-1' },
+    // { account: '865200059792', region: 'us-east-1' },
 ];
 
 for (const env of environments) {
@@ -17,5 +18,5 @@ for (const env of environments) {
     const containerStack = new ContainerStack (app, `v2-ContainerStack-${env.region}`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
     // containerStack.addDependency(clusterStack);
 
-    const cicdStack = new CicdForAppStack (app, `CicdForAppStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
+    // const cicdStack = new CicdForAppStack (app, `CicdForAppStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
 }
