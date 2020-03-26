@@ -46,20 +46,19 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 }
 
 
-function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: string) :PipelineProject {
+function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: ecr.Repository) :PipelineProject {
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks`, {
-        projectName: `deploy-to-eks`,
-        environment: {
-            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
-                directory: './utils/buildimage'
-            })
-        },
+        // environment: {
+        //     buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
+        //         directory: './utils/buildimage'
+        //     })
+        // },
         environmentVariables: { 
             'CLUSTER_NAME': {
                 value: `${cluster.clusterName}`
               },
             'ECR_REPO_URI': {
-            value: `${apprepo}`
+            value: `${apprepo.repositoryUri}`
           } 
         },
         buildSpec: codebuild.BuildSpec.fromObject({

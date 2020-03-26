@@ -4,6 +4,7 @@ import * as cdk from '@aws-cdk/core';
 import { ClusterStack } from '../lib/cluster-stack';
 import { ContainerStack } from '../lib/container-stack';
 import { CicdForAppStack } from '../lib/cicd-for-app-stack';
+import { DatabaseStack } from '../lib/database-stack';
 
 const app = new cdk.App();
 
@@ -14,9 +15,11 @@ const environments = [
 ];
 
 for (const env of environments) {
-    const clusterStack = new ClusterStack (app, `v2-ClusterStack-${env.region}`, { env });
-    const containerStack = new ContainerStack (app, `v2-ContainerStack-${env.region}`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
+    const clusterStack = new ClusterStack (app, `ClusterStack`, { env });
+    const containerStack = new ContainerStack (app, `ContainerStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
     // containerStack.addDependency(clusterStack);
+    // const dbStack = new DatabaseStack (app, 'DatabaseStack', { env });
 
-    // const cicdStack = new CicdForAppStack (app, `CicdForAppStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
+    const cicdStack = new CicdForAppStack (app, `CicdForAppStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
 }
+

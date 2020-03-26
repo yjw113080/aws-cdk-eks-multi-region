@@ -6,7 +6,7 @@ import codepipeline = require('@aws-cdk/aws-codepipeline');
 import { CommonProps } from './cluster-stack';
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
 import * as iam from '@aws-cdk/aws-iam';
-import { codeToECRspec } from '../utils/buildspec-deploy-to-eks';
+import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
 
 
 export class CicdForAppStack extends cdk.Stack {
@@ -14,16 +14,51 @@ export class CicdForAppStack extends cdk.Stack {
     constructor(scope: cdk.Construct, id: string, props: CommonProps) {
         super(scope, id, props);
 
-        // defining code repository and image registry
-        // const helloPyRepo = new codecommit.Repository(this, 'hello-py-for-demogo',{ repositoryName: 'repo-hello-py' });
-        // const ecrForHelloPy = new ecr.Repository(this, 'ecr-for-hello-py');
-        // ecrForHelloPy.grantPull(props.asg.role);
+        const helloPyRepo = new codecommit.Repository(this, 'hello-py-for-demogo', {
+            repositoryName: 'hello-py-for-demogo'
+        });
+        const ecrForHelloPy = new ecr.Repository(this, 'ecr-for-hello-py');
+        ecrForHelloPy.grantPull(props.asg.role);
 
-        // // things we need for the pipeline
-        // const sourceOutput = new codepipeline.Artifact();
-        // const buildForECR = codeToECRspec(this, ecrForHelloPy.repositoryUri);
-        // ecrForHelloPy.grantPullPush(buildForECR.role!);
-
+        const sourceOutput = new codepipeline.Artifact();
+        const buildForECR = codeToECRspec(this, ecrForHelloPy.repositoryUri);
+        ecrForHelloPy.grantPullPush(buildForECR.role!);
+        const deployToMainEKScluster = deployToEKSspec(this, props.cluster, ecrForHelloPy);
+        
+        const repoToEcrPipeline = new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
+            stages: [ {
+                    stageName: 'Source',
+                    actions: [ new pipelineAction.CodeCommitSourceAction({
+                            actionName: 'CatchtheSourcefromCode',
+                            repository: helloPyRepo,
+                            output: sourceOutput,
+                        })]
+                },{
+                    stageName: 'Build',
+                    actions: [ new pipelineAction.CodeBuildAction({
+                        actionName: 'BuildandPushtoECR',
+                        input: sourceOutput,
+                        project: buildForECR
+                    })]
+                },
+                {
+                    stageName: 'DeployToMainEKScluster',
+                    actions: [ new pipelineAction.CodeBuildAction({
+                        actionName: 'DeployToMainEKScluster',
+                        input: sourceOutput,
+                        // project: new codebuild.PipelineProject(this,'test',{buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml')})
+                        project: deployToMainEKScluster
+                    })]
+                },
+                {
+                stageName: 'ApproveToDeployTo2ndRegion',
+                actions: [ new pipelineAction.ManualApprovalAction({
+                        actionName: 'ApproveToDeployTo2ndRegion'
+                })]
+                },
+                
+            ]
+        });
 
     }
 }

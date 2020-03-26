@@ -24,13 +24,8 @@ export class ClusterStack extends cdk.Stack {
 
 
       this.cluster = new eks.Cluster(this, 'demogo-cluster', {
-        clusterName: `demogo-${cdk.Stack.of(this).region}`,
         mastersRole: clusterAdmin,
         defaultCapacity: 0
-      });
-
-      this.cluster.addFargateProfile('FargateProfile', {
-        selectors: [ { namespace: 'fargate' } ]
       });
 
       let asg = this.cluster.addCapacity('t3-asg', {
@@ -52,61 +47,6 @@ export class ClusterStack extends cdk.Stack {
       }));
       this.asg = asg;
 
-
-      /*
-        Temporarily include pipeline
-      */
-
-      const helloPyRepo = new codecommit.Repository(this, 'hello-py-for-demogo',{ repositoryName: 'repo-hello-py2' });
-      const ecrForHelloPy = new ecr.Repository(this, 'ecr-for-hello-py2');
-      ecrForHelloPy.grantPull(asg.role);
-
-      const sourceOutput = new codepipeline.Artifact();
-      const buildForECR = codeToECRspec(this, ecrForHelloPy.repositoryUri);
-      ecrForHelloPy.grantPullPush(buildForECR.role!);
-      const deployToMainEKScluster = deployToEKSspec(this, this.cluster, ecrForHelloPy.repositoryUri);
-      
-      const repoToEcrPipeline = new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
-        stages: [ {
-                stageName: 'Source',
-                actions: [ new pipelineAction.CodeCommitSourceAction({
-                        actionName: 'CatchtheSourcefromCode',
-                        repository: helloPyRepo,
-                        output: sourceOutput,
-                    })]
-            },{
-                stageName: 'Build',
-                actions: [ new pipelineAction.CodeBuildAction({
-                    actionName: 'BuildandPushtoECR',
-                    input: sourceOutput,
-                    project: buildForECR
-                })]
-            },
-            // {
-            //     stageName: 'ECRSource',
-            //     actions: [ new pipelineAction.EcrSourceAction({ 
-            //         actionName: 'CatchImagefromECR',
-            //         repository: ecrForHelloPy,
-            //         output: new codepipeline.Artifact()
-            //       }) ]
-            // },
-            {
-                stageName: 'DeployToMainEKScluster',
-                actions: [ new pipelineAction.CodeBuildAction({
-                    actionName: 'DeployToMainEKScluster',
-                    input: sourceOutput,
-                    project: deployToMainEKScluster
-                })]
-            },
-            {
-              stageName: 'ApproveToDeployTo2ndRegion',
-              actions: [ new pipelineAction.ManualApprovalAction({
-                    actionName: 'ApproveToDeployTo2ndRegion'
-              })]
-            },
-            
-        ]
-      });
 
   }
 }
