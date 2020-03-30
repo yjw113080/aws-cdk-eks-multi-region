@@ -9,7 +9,7 @@ import * as iam from '@aws-cdk/aws-iam';
 import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
 
 
-export class CicdForAppStack extends cdk.Stack {
+export class CicdForPrimaryRegionStack extends cdk.Stack {
   
     constructor(scope: cdk.Construct, id: string, props: CommonProps) {
         super(scope, id, props);
@@ -23,22 +23,21 @@ export class CicdForAppStack extends cdk.Stack {
         const sourceOutput = new codepipeline.Artifact();
         const buildForECR = codeToECRspec(this, ecrForHelloPy.repositoryUri);
         ecrForHelloPy.grantPullPush(buildForECR.role!);
-        // const deployToMainEKScluster = deployToEKSspec(this, ecrForHelloPy);
 
         const deployToMainEKScluster = deployToEKSspec(this, props.cluster, ecrForHelloPy);
         
-        const repoToEcrPipeline = new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
+        new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
             stages: [ {
                     stageName: 'Source',
                     actions: [ new pipelineAction.CodeCommitSourceAction({
-                            actionName: 'CatchtheSourcefromCode',
+                            actionName: 'CatchSourcefromCode',
                             repository: helloPyRepo,
                             output: sourceOutput,
                         })]
                 },{
                     stageName: 'Build',
                     actions: [ new pipelineAction.CodeBuildAction({
-                        actionName: 'BuildandPushtoECR',
+                        actionName: 'BuildAndPushtoECR',
                         input: sourceOutput,
                         project: buildForECR
                     })]
@@ -48,17 +47,23 @@ export class CicdForAppStack extends cdk.Stack {
                     actions: [ new pipelineAction.CodeBuildAction({
                         actionName: 'DeployToMainEKScluster',
                         input: sourceOutput,
-                        // project: new codebuild.PipelineProject(this,'test',{buildSpec: codebuild.BuildSpec.fromSourceFilename('buildspec.yml')})
                         project: deployToMainEKScluster
                     })]
                 },
                 {
-                stageName: 'ApproveToDeployTo2ndRegion',
-                actions: [ new pipelineAction.ManualApprovalAction({
-                        actionName: 'ApproveToDeployTo2ndRegion'
-                })]
+                    stageName: 'ApproveToDeployTo2ndRegion',
+                    actions: [ new pipelineAction.ManualApprovalAction({
+                            actionName: 'ApproveToDeployTo2ndRegion'
+                    })]
                 },
-                
+                // {
+                //     stageName: 'DeployTo2ndEKScluster',
+                //     actions: [ new pipelineAction.CodeBuildAction({
+                //         actionName: 'DeployTo2ndEKScluster',
+                //         input: sourceOutput,
+
+                //     }) ]
+                // }
             ]
         });
 

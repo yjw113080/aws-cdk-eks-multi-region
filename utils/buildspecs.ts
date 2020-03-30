@@ -22,7 +22,7 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
                     commands: [
                         'env', `$(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)`, 
                         // `COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7)`,
-                        'IMAGE_TAG=${$CODEBUILD_RESOLVED_SOURCE_VERSION:=latest}'
+                        'IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION'
                     ]
                 },
                 build: {
@@ -46,26 +46,18 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 }
 
 
-function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: ecr.Repository) :PipelineProject {
-    // const ecrForBuildImage = new ecr.Repository(scope, 'image-for-codebuild-eks');
-    // new cdk.CfnOutput(scope, 'uri-for-ecr-buildimage', {
-    //     value: ecrForBuildImage.repositoryUri
-    // });
+function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
     
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks`, {
         environment: {
             buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
                 directory: './utils/buildimage'
-            })
-            // buildImage: codebuild.LinuxBuildImage.fromEcrRepository(ecrForBuildImage)
+            }),
+            privileged: true
         },
         environmentVariables: { 
-            'CLUSTER_NAME': {
-                value: `demogo`
-              },
-            'ECR_REPO_URI': {
-            value: apprepo.repositoryUri
-          } 
+            'CLUSTER_NAME': {  value: `demogo` },
+            'ECR_REPO_URI': {  value: apprepo.repositoryUri } ,
         },
         buildSpec: codebuild.BuildSpec.fromObject({
             version: "0.2",
