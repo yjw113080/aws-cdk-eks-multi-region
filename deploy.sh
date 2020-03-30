@@ -1,0 +1,1 @@
+for i in "$(cdk list)"; do cdk deploy $i --require-approval never; done

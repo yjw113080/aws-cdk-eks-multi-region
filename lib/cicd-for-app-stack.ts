@@ -23,6 +23,8 @@ export class CicdForAppStack extends cdk.Stack {
         const sourceOutput = new codepipeline.Artifact();
         const buildForECR = codeToECRspec(this, ecrForHelloPy.repositoryUri);
         ecrForHelloPy.grantPullPush(buildForECR.role!);
+        // const deployToMainEKScluster = deployToEKSspec(this, ecrForHelloPy);
+
         const deployToMainEKScluster = deployToEKSspec(this, props.cluster, ecrForHelloPy);
         
         const repoToEcrPipeline = new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {

@@ -17,9 +17,6 @@ const environments = [
 for (const env of environments) {
     const clusterStack = new ClusterStack (app, `ClusterStack`, { env });
     const containerStack = new ContainerStack (app, `ContainerStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
-    // containerStack.addDependency(clusterStack);
-    // const dbStack = new DatabaseStack (app, 'DatabaseStack', { env });
-
     const cicdStack = new CicdForAppStack (app, `CicdForAppStack`, { env, cluster: clusterStack.cluster, asg: clusterStack.asg});
 }
 

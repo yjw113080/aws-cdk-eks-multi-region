@@ -47,18 +47,24 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 
 
 function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: ecr.Repository) :PipelineProject {
+    // const ecrForBuildImage = new ecr.Repository(scope, 'image-for-codebuild-eks');
+    // new cdk.CfnOutput(scope, 'uri-for-ecr-buildimage', {
+    //     value: ecrForBuildImage.repositoryUri
+    // });
+    
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks`, {
-        // environment: {
-        //     buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
-        //         directory: './utils/buildimage'
-        //     })
-        // },
+        environment: {
+            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
+                directory: './utils/buildimage'
+            })
+            // buildImage: codebuild.LinuxBuildImage.fromEcrRepository(ecrForBuildImage)
+        },
         environmentVariables: { 
             'CLUSTER_NAME': {
-                value: `${cluster.clusterName}`
+                value: `demogo`
               },
             'ECR_REPO_URI': {
-            value: `${apprepo.repositoryUri}`
+            value: apprepo.repositoryUri
           } 
         },
         buildSpec: codebuild.BuildSpec.fromObject({
@@ -82,7 +88,7 @@ function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: e
     cluster.awsAuth.addMastersRole(deployBuildSpec.role!);
     deployBuildSpec.addToRolePolicy(new iam.PolicyStatement({
       actions: ['eks:DescribeCluster'],
-      resources: [`${cluster.clusterArn}`],
+      resources: [`*`],
     }));
 
     return deployBuildSpec;
