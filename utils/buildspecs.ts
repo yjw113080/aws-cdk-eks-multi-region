@@ -13,7 +13,7 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
             privileged: true
         },
         environmentVariables: { 'ECR_REPO_URI': {
-            value: `${apprepo}`
+            value: apprepo
           } },
         buildSpec: codebuild.BuildSpec.fromObject({
             version: "0.2",
@@ -46,7 +46,7 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 }
 
 
-function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
+function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
     
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks`, {
         environment: {
@@ -56,6 +56,7 @@ function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: e
             privileged: true
         },
         environmentVariables: { 
+            'REGION': { value:  region },
             'CLUSTER_NAME': {  value: `demogo` },
             'ECR_REPO_URI': {  value: apprepo.repositoryUri } ,
         },
@@ -87,5 +88,33 @@ function deployToEKSspec (scope: cdk.Construct, cluster: eks.Cluster, apprepo: e
 
 }
 
+function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
+    const replicateBuildspec = new codebuild.PipelineProject(scope, `replicate-to-2nd-region-ecr`, {
+        environment: {
+            buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
+            privileged: true
+        },
+        buildSpec: codebuild.BuildSpec.fromObject({
+            version: "0.2",
+            phases: {
+                build: {
+                    commands: [
+                        `$(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)`,
+                        "IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION",
+                        `srcImage=${originRepo.repositoryUri}/$IMAGE_TAG`,
+                        `docker pull $srcImage`,
+                        `targetImage=${targetRepo.repositoryUri}/$IMAGE_TAG`,
+                        `docker tag $srcImage $targetImage`,
+                        `docker push $targetImage`
+                    ]
+                }
+            }  
+        })
+    });
+
+    return replicateBuildspec;
+}
+
 export { codeToECRspec as  codeToECRspec }
 export { deployToEKSspec as deployToEKSspec }
+export { replicateECRspec as replicateECRspec }

@@ -6,34 +6,31 @@ import { ContainerStack } from '../lib/container-stack';
 import { CicdForPrimaryRegionStack } from '../lib/cicd-for-primary-region-stack';
 import { CicdForSecondaryRegionStack } from '../lib/cicd-for-secondary-region-stack';
 
-import { DatabaseStack } from '../lib/database-stack';
-
 
 const app = new cdk.App();
 const primaryRegion = 'ap-northeast-1';
 const secondaryRegion = 'us-east-1';
 
 const environments = [
+
     { account: app.node.tryGetContext('account') || process.env.CDK_INTEG_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT, 
-    region: primaryRegion },
+        region: primaryRegion },
     { account: app.node.tryGetContext('account') || process.env.CDK_INTEG_ACCOUNT || process.env.CDK_DEFAULT_ACCOUNT, 
-    region: secondaryRegion }
+    region: secondaryRegion },
 
 ];
 
 
-for (const environment of environments) {
-    const clusterStack = new ClusterStack (app, `ClusterStack-${environment.region}`, { env: environment });
-    new ContainerStack (app, `ContainerStack-${environment.region}`, { env: environment, cluster: clusterStack.cluster, asg: clusterStack.asg});
-    
-    // cidcdStack doesn't go through the environments loop since it would be located in only one reginon.
-    if (environment.region == primaryRegion) {
-        new CicdForPrimaryRegionStack (app, `CicdForPrimaryRegionStack`, { env: environments[0], cluster: clusterStack.cluster, asg: clusterStack.asg});
-    }
+let primaryCluster = new ClusterStack(app, `ClusterStack-${environments[0].region}`, {env: environments[0]});
+let primaryContainer = new ClusterStack(app, `ClusterStack-${environments[0].region}`, {env: environments[0]});
+primaryContainer.addDependency(primaryCluster);
 
-    if (environment.region == secondaryRegion) {
-        new CicdForSecondaryRegionStack (app, `CicdForSecondaryRegionStack`, { env: environments[1], cluster: clusterStack.cluster, asg: clusterStack.asg});
-    }
+let secondaryCluster = new ClusterStack(app, `ClusterStack-${environments[1].region}`, {env: environments[1]});
+let secondaryContainer = new ClusterStack(app, `ClusterStack-${environments[1].region}`, {env: environments[1]});
+secondaryContainer.addDependency(secondaryCluster);
 
-}
-
+// let secondaryCicd = new CicdForSecondaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[1], cluster: secondaryCluster.cluster, asg: secondaryCluster.asg});
+let primaryCicd = new CicdForPrimaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[0], cluster: primaryCluster.cluster, asg: primaryCluster.asg
+    // , targetRepo: secondaryCicd.targetRepo
+});
+// primaryCicd.addDependency(secondaryCicd);

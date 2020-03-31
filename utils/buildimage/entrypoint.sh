@@ -33,16 +33,16 @@ if [[ ! -z ${CODEBUILD_BUILD_ID} ]]; then
 fi
 
 
-if [[ ! -z ${AWS_REGION} ]]; then
-    region=$AWS_REGION
-    echo "[INFO] region=$AWS_REGION"
-else 
-    echo "REGION not defined, trying to lookup from EC2 metadata..."
-    region=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq .region -r)
-fi
+# if [[ ! -z ${AWS_REGION} ]]; then
+#     region=$AWS_REGION
+#     echo "[INFO] region=$AWS_REGION"
+# else 
+#     echo "REGION not defined, trying to lookup from EC2 metadata..."
+#     region=$(curl -s http://169.254.169.254/latest/dynamic/instance-identity/document | jq .region -r)
+# fi
 
-# export AWS_DEFAULT_REGION=${REGION-${CODEBUILD_AGENT_ENV_CODEBUILD_REGION-$region}}
-export AWS_DEFAULT_REGION=$region
+# # export AWS_DEFAULT_REGION=${REGION-${CODEBUILD_AGENT_ENV_CODEBUILD_REGION-$region}}
+export AWS_DEFAULT_REGION=$REGION
 
 CLUSTER_NAME=${CLUSTER_NAME-default}
 

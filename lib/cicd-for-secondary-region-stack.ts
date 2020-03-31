@@ -11,13 +11,16 @@ import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
 
 
 export class CicdForSecondaryRegionStack extends cdk.Stack {
+    public readonly targetRepo: ecr.IRepository;
   
     constructor(scope: cdk.Construct, id: string, props: CommonProps) {
         super(scope, id, props);
         const ecrForHelloPy = new ecr.Repository(this, 'ecr-for-hello-py');
+        this.targetRepo = ecrForHelloPy;
+
         const ecrOutput = new codepipeline.Artifact();
 
-        const deployTo2ndEKScluster = deployToEKSspec(this, props.cluster, ecrForHelloPy);
+        const deployTo2ndEKScluster = deployToEKSspec(this, 'test', props.cluster, ecrForHelloPy);
 
         new codepipeline.Pipeline(this, 'pipeline-for-secondary-region', {
             stages: [{
@@ -39,4 +42,9 @@ export class CicdForSecondaryRegionStack extends cdk.Stack {
         // const pyRepo = ecr.Repository.fromRepositoryName(this, 'hello-py', 'hello-py-for-demogo');
         // deployToEKSspec(this, props.cluster, pyRepo);
     }
+}
+
+
+export interface CicdProps extends CommonProps {
+    targetRepo: ecr.IRepository
 }
