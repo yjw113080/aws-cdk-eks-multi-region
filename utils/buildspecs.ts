@@ -48,9 +48,9 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 
 function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
     
-    const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks`, {
+    const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
         environment: {
-            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, 'custom-image-for-eks', {
+            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, `custom-image-for-eks-${region}`, {
                 directory: './utils/buildimage'
             }),
             privileged: true

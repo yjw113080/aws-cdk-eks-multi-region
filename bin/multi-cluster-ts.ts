@@ -22,11 +22,11 @@ const environments = [
 
 
 let primaryCluster = new ClusterStack(app, `ClusterStack-${environments[0].region}`, {env: environments[0]});
-let primaryContainer = new ClusterStack(app, `ClusterStack-${environments[0].region}`, {env: environments[0]});
+let primaryContainer = new ClusterStack(app, `ContainerStack-${environments[0].region}`, {env: environments[0]});
 primaryContainer.addDependency(primaryCluster);
 
 let secondaryCluster = new ClusterStack(app, `ClusterStack-${environments[1].region}`, {env: environments[1]});
-let secondaryContainer = new ClusterStack(app, `ClusterStack-${environments[1].region}`, {env: environments[1]});
+let secondaryContainer = new ClusterStack(app, `ContainerStack-${environments[1].region}`, {env: environments[1]});
 secondaryContainer.addDependency(secondaryCluster);
 
 // let secondaryCicd = new CicdForSecondaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[1], cluster: secondaryCluster.cluster, asg: secondaryCluster.asg});
