@@ -68,10 +68,11 @@ export function deployToEKSspec (scope: cdk.Construct, region: string, cluster: 
                   'env',
                   'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
                   'aws sts get-caller-identity',
-                  '/usr/local/bin/entrypoint.sh'                    ]
+                  '/usr/local/bin/entrypoint.sh']
               },
               build: {
                 commands: [
+                    `kubectl get nodes`,
                     `sed -i 's@CONTAINER_IMAGE@'"$ECR_REPO_URI:$TAG"'@' hello-py.yaml`,
                     'kubectl apply -f hello-py.yaml'
                 ]
