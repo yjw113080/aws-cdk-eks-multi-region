@@ -5,7 +5,7 @@ import * as eks from '@aws-cdk/aws-eks';
 import { PipelineProject } from '@aws-cdk/aws-codebuild';
 import * as ecr from '@aws-cdk/aws-ecr';
 
-function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject {
+export function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject {
     const buildForECR = new codebuild.PipelineProject(scope, `build-to-ecr`, { 
         projectName: `build-to-ecr`,
         environment: {
@@ -46,7 +46,7 @@ function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject 
 }
 
 
-function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
+export function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
     
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
         environment: {
@@ -67,6 +67,7 @@ function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Clu
                 commands: [
                   'env',
                   'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+                  'aws sts get-caller-identity',
                   '/usr/local/bin/entrypoint.sh'                    ]
               },
               build: {
@@ -88,7 +89,7 @@ function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Clu
 
 }
 
-function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
+export function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
     const replicateBuildspec = new codebuild.PipelineProject(scope, `replicate-to-2nd-region-ecr`, {
         environment: {
             buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
@@ -115,6 +116,3 @@ function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, ta
     return replicateBuildspec;
 }
 
-export { codeToECRspec as  codeToECRspec }
-export { deployToEKSspec as deployToEKSspec }
-export { replicateECRspec as replicateECRspec }
