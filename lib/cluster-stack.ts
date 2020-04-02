@@ -9,25 +9,36 @@ import codebuild = require('@aws-cdk/aws-codebuild');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
 import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
+import { PhysicalName, Aws } from '@aws-cdk/core';
 
 
 export class ClusterStack extends cdk.Stack {
   public readonly cluster: eks.Cluster;
   public readonly asg: autoscaling.AutoScalingGroup;
+  public readonly roleFor2ndRegionDeployment: iam.Role;
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-
+      const primaryRegion = 'ap-northest-1';
       const clusterAdmin = new iam.Role(this, 'AdminRole', {
         assumedBy: new iam.AccountRootPrincipal()
       });
-
 
       this.cluster = new eks.Cluster(this, 'demogo-cluster', {
         clusterName: `demogo`,
         mastersRole: clusterAdmin,
         defaultCapacity: 0
       });
+
+      const roleForCodebuild = new iam.Role(this, 'for-2nd-region', {
+        roleName: PhysicalName.GENERATE_IF_NEEDED,
+        assumedBy: new iam.AccountRootPrincipal()
+      });
+
+      if (cdk.Stack.of(this).region!=primaryRegion) 
+        this.cluster.awsAuth.addMastersRole(roleForCodebuild)
+      
+      this.roleFor2ndRegionDeployment = roleForCodebuild;
 
       let asg = this.cluster.addCapacity('t3-asg', {
         minCapacity: 1,
@@ -55,4 +66,10 @@ export class ClusterStack extends cdk.Stack {
 export interface CommonProps extends cdk.StackProps {
   cluster: eks.Cluster,
   asg: autoscaling.AutoScalingGroup
+}
+
+export interface PropForCicd extends cdk.StackProps {
+  cluster: eks.Cluster,
+  asg: autoscaling.AutoScalingGroup,
+  roleFor2ndRegionDeployment: iam.Role
 }

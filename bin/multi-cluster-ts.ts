@@ -29,8 +29,9 @@ let secondaryCluster = new ClusterStack(app, `ClusterStack-${environments[1].reg
 let secondaryContainer = new ContainerStack(app, `ContainerStack-${environments[1].region}`, {env: environments[1], cluster: secondaryCluster.cluster, asg: secondaryCluster.asg});
 // secondaryContainer.addDependency(secondaryCluster);
 
-// let secondaryCicd = new CicdForSecondaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[1], cluster: secondaryCluster.cluster, asg: secondaryCluster.asg});
-let primaryCicd = new CicdForPrimaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[0], cluster: primaryCluster.cluster, asg: primaryCluster.asg
+// let secondaryCicd = new CicdForSecondaryRegionStack(app, `CicdForSecondaryStack`, {env: environments[1], cluster: secondaryCluster.cluster, asg: secondaryCluster.asg});
+let primaryCicd = new CicdForPrimaryRegionStack(app, `CicdForPrimaryStack`, {env: environments[0], cluster: primaryCluster.cluster, asg: primaryCluster.asg,
+    roleFor2ndRegionDeployment: secondaryCluster.roleFor2ndRegionDeployment
     // , targetRepo: secondaryCicd.targetRepo
 });
 // primaryCicd.addDependency(secondaryCicd);

@@ -7,6 +7,7 @@ import { CommonProps } from './cluster-stack';
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
 import * as iam from '@aws-cdk/aws-iam';
 import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
+import { PhysicalName } from '@aws-cdk/core';
 
 
 
@@ -15,12 +16,14 @@ export class CicdForSecondaryRegionStack extends cdk.Stack {
   
     constructor(scope: cdk.Construct, id: string, props: CommonProps) {
         super(scope, id, props);
-        const ecrForHelloPy = new ecr.Repository(this, 'ecr-for-hello-py');
+        
+        const ecrForHelloPy = new ecr.Repository(this, PhysicalName.GENERATE_IF_NEEDED);
         this.targetRepo = ecrForHelloPy;
-
+        ecrForHelloPy.grantPull(props.asg);
         const ecrOutput = new codepipeline.Artifact();
 
-        const deployTo2ndEKScluster = deployToEKSspec(this, 'test', props.cluster, ecrForHelloPy);
+        const deployTo2ndEKScluster = deployToEKSspec(this, cdk.Stack.of(this).region, props.cluster, ecrForHelloPy);
+        ecrForHelloPy.grantPullPush(deployTo2ndEKScluster.role!);
 
         new codepipeline.Pipeline(this, 'pipeline-for-secondary-region', {
             stages: [{

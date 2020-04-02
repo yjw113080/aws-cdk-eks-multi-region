@@ -67,12 +67,10 @@ export function deployToEKSspec (scope: cdk.Construct, region: string, cluster: 
                 commands: [
                   'env',
                   'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-                  'aws sts get-caller-identity',
                   '/usr/local/bin/entrypoint.sh']
               },
               build: {
                 commands: [
-                    `kubectl get nodes`,
                     `sed -i 's@CONTAINER_IMAGE@'"$ECR_REPO_URI:$TAG"'@' hello-py.yaml`,
                     'kubectl apply -f hello-py.yaml'
                 ]
@@ -117,3 +115,40 @@ export function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IReposit
     return replicateBuildspec;
 }
 
+export function deployTo2ndClusterspec (scope: cdk.Construct, region: string, apprepo: ecr.IRepository, roleToAssume: iam.Role):PipelineProject {
+    const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
+        environment: {
+            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, `custom-image-for-eks-${region}`, {
+                directory: './utils/buildimage'
+            }),
+            privileged: true
+        },
+        environmentVariables: { 
+            'REGION': { value:  region },
+            'CLUSTER_NAME': {  value: `demogo` },
+            'ECR_REPO_URI': {  value: apprepo.repositoryUri } ,
+        },
+        buildSpec: codebuild.BuildSpec.fromObject({
+            version: "0.2",
+            phases: {
+              install: {
+                commands: [
+                  'env',
+                  'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
+                  '/usr/local/bin/entrypoint.sh']
+              },
+              build: {
+                commands: [
+                    `CREDENTIALS=$(aws sts assume-role --role-arn "${roleToAssume.roleArn}" --role-session-name codebuild-cdk)`,
+                    `export AWS_ACCESS_KEY_ID="$(echo \${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"`,
+                    `export AWS_SECRET_ACCESS_KEY="$(echo \${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"`,
+                    `export AWS_SESSION_TOKEN="$(echo \${CREDENTIALS} | jq -r '.Credentials.SessionToken')"`,
+                    `export AWS_EXPIRATION=$(echo \${CREDENTIALS} | jq -r '.Credentials.Expiration')`,
+                    `sed -i 's@CONTAINER_IMAGE@'"$ECR_REPO_URI:$TAG"'@' hello-py.yaml`,
+                    'kubectl apply -f hello-py.yaml'
+                ]
+              }
+            }})
+    });
+    return deployBuildSpec;
+}
