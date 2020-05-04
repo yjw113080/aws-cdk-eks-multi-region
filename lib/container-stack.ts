@@ -1,12 +1,9 @@
 import * as cdk from '@aws-cdk/core';
-import { CommonProps } from './cluster-stack';
-import * as fs from 'fs';
-import * as yaml from 'js-yaml';
+import { EksProps } from './cluster-stack';
 import { readYamlFromDir } from '../utils/read-file';
-import { HelmChart } from '@aws-cdk/aws-eks';
 
 export class ContainerStack extends cdk.Stack {
-  constructor(scope: cdk.Construct, id: string, props: CommonProps) {
+  constructor(scope: cdk.Construct, id: string, props: EksProps) {
     super(scope, id, props);
 
     const stable = 'https://kubernetes-charts.storage.googleapis.com/';
@@ -19,8 +16,7 @@ export class ContainerStack extends cdk.Stack {
 
     cluster.addChart(`metrics-server`, {
       repository: stable,
-      chart: 'metrics-server',
-      release: 'metrics-server'
+      chart: 'metrics-server'
     });
 
   }
