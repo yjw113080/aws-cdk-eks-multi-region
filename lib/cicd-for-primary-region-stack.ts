@@ -1,12 +1,11 @@
 import * as cdk from '@aws-cdk/core';
 import codecommit = require('@aws-cdk/aws-codecommit');
 import ecr = require('@aws-cdk/aws-ecr');
-import codebuild = require('@aws-cdk/aws-codebuild');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
 import * as iam from '@aws-cdk/aws-iam';
 import { codeToECRspec, deployToEKSspec, deployTo2ndClusterspec } from '../utils/buildspecs';
-import { EksProps, PropForCicd } from './cluster-stack';
+import { PropForCicd } from './cluster-stack';
 
 export class CicdForPrimaryRegionStack extends cdk.Stack {
 
@@ -30,6 +29,11 @@ export class CicdForPrimaryRegionStack extends cdk.Stack {
 
         const deployToMainCluster = deployToEKSspec(this, primaryRegion, props.cluster, ecrForMainRegion);
         const deployTo2ndCluster = deployTo2ndClusterspec(this, secondaryRegion, ecrForMainRegion, props.roleFor2ndRegionDeployment);
+
+        deployTo2ndCluster.addToRolePolicy(new iam.PolicyStatement({
+            actions: ['sts:AssumeRole'],
+            resources: [props.roleFor2ndRegionDeployment.roleArn]
+        }))
 
         const sourceOutput = new codepipeline.Artifact();
         new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
@@ -57,15 +61,15 @@ export class CicdForPrimaryRegionStack extends cdk.Stack {
                     })]
                 },
                 {
-                    stageName: 'ApproveToDeployTo2ndRegion',
+                    stageName: 'ApprovalToReplicate',
                     actions: [ new pipelineAction.ManualApprovalAction({
-                            actionName: 'ApproveToDeployTo2ndRegion'
+                        actionName: 'ApproveToReplicateTo2ndRegion'
                     })]
                 },
                 {
-                    stageName: 'DeployTo2ndRegionCluster',
+                    stageName: 'Deploy2ndRegion',
                     actions: [ new pipelineAction.CodeBuildAction({
-                        actionName: 'DeployTo2ndRegionCluster',
+                        actionName: 'Deploy2ndRegion',
                         input: sourceOutput,
                         project: deployTo2ndCluster
                     })]
