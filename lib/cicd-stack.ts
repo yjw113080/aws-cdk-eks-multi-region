@@ -34,7 +34,7 @@ export class CicdStack extends cdk.Stack {
 
 
         const sourceOutput = new codepipeline.Artifact();
-        new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
+        new codepipeline.Pipeline(this, 'multi-region-eks-dep', {
             stages: [ {
                     stageName: 'Source',
                     actions: [ new pipelineAction.CodeCommitSourceAction({
