@@ -3,8 +3,7 @@ import codecommit = require('@aws-cdk/aws-codecommit');
 import ecr = require('@aws-cdk/aws-ecr');
 import codepipeline = require('@aws-cdk/aws-codepipeline');
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
-import * as iam from '@aws-cdk/aws-iam';
-import { codeToECRspec, deployToEKSspec, deployTo2ndClusterspec } from '../utils/buildspecs';
+import { codeToECRspec, deployToEKSspec } from '../utils/buildspecs';
 import { CicdProps } from './cluster-stack';
 
 
@@ -31,17 +30,8 @@ export class CicdStack extends cdk.Stack {
         ecrForMainRegion.grantPullPush(buildForECR.role!);
         
         const deployToMainCluster = deployToEKSspec(this, primaryRegion, ecrForMainRegion, props.firstRegionRole);
-        deployToMainCluster.addToRolePolicy(new iam.PolicyStatement({
-            actions: ['sts:AssumeRole'],
-            resources: [props.firstRegionRole.roleArn]
-        }))
+        const deployTo2ndCluster = deployToEKSspec(this, secondaryRegion, ecrForMainRegion, props.secondRegionRole);
 
-
-        const deployTo2ndCluster = deployTo2ndClusterspec(this, secondaryRegion, ecrForMainRegion, props.secondRegionRole);
-        deployTo2ndCluster.addToRolePolicy(new iam.PolicyStatement({
-                    actions: ['sts:AssumeRole'],
-                    resources: [props.secondRegionRole.roleArn]
-                }));
 
         const sourceOutput = new codepipeline.Artifact();
         new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {

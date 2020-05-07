@@ -44,81 +44,13 @@ export function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineP
 
 }
 
-
-export function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository) :PipelineProject {
+export function deployToEKSspec (scope: cdk.Construct, region: string, apprepo: ecr.IRepository, roleToAssume: iam.Role) :PipelineProject {
     
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
         environment: {
             buildImage: codebuild.LinuxBuildImage.fromAsset(scope, `custom-image-for-eks-${region}`, {
                 directory: './utils/buildimage'
             })
-        },
-        environmentVariables: { 
-            'REGION': { value:  region },
-            'CLUSTER_NAME': {  value: `demogo` },
-            'ECR_REPO_URI': {  value: apprepo.repositoryUri } ,
-        },
-        buildSpec: codebuild.BuildSpec.fromObject({
-            version: "0.2",
-            phases: {
-              install: {
-                commands: [
-                  'env',
-                  'export TAG=${CODEBUILD_RESOLVED_SOURCE_VERSION}',
-                  '/usr/local/bin/entrypoint.sh']
-              },
-              build: {
-                commands: [
-                    `sed -i 's@CONTAINER_IMAGE@'"$ECR_REPO_URI:$TAG"'@' app-deployment.yaml`,
-                    'kubectl apply -f app-deployment.yaml'
-                ]
-              }
-            }})
-    });
-
-    cluster.awsAuth.addMastersRole(deployBuildSpec.role!);
-    deployBuildSpec.addToRolePolicy(new iam.PolicyStatement({
-      actions: ['eks:DescribeCluster'],
-      resources: [`*`],
-    }));
-
-    return deployBuildSpec;
-
-}
-
-export function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
-    const replicateBuildspec = new codebuild.PipelineProject(scope, `replicate-to-2nd-region-ecr`, {
-        environment: {
-            buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
-            privileged: true
-        },
-        buildSpec: codebuild.BuildSpec.fromObject({
-            version: "0.2",
-            phases: {
-                build: {
-                    commands: [
-                        `$(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)`,
-                        "IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION",
-                        `srcImage=${originRepo.repositoryUri}/$IMAGE_TAG`,
-                        `docker pull $srcImage`,
-                        `targetImage=${targetRepo.repositoryUri}/$IMAGE_TAG`,
-                        `docker tag $srcImage $targetImage`,
-                        `docker push $targetImage`
-                    ]
-                }
-            }  
-        })
-    });
-
-    return replicateBuildspec;
-}
-
-export function deployTo2ndClusterspec (scope: cdk.Construct, region: string, apprepo: ecr.IRepository, roleToAssume: iam.Role):PipelineProject {
-    const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
-        environment: {
-            buildImage: codebuild.LinuxBuildImage.fromAsset(scope, `custom-image-for-eks-${region}`, {
-                directory: './utils/buildimage'
-            }),
         },
         environmentVariables: { 
             'REGION': { value:  region },
@@ -149,9 +81,42 @@ export function deployTo2ndClusterspec (scope: cdk.Construct, region: string, ap
     });
 
     deployBuildSpec.addToRolePolicy(new iam.PolicyStatement({
-        actions: ['eks:DescribeCluster'],
-        resources: [`*`],
-      }));
-      
+      actions: ['eks:DescribeCluster'],
+      resources: [`*`],
+    }));
+
+    deployBuildSpec.addToRolePolicy(new iam.PolicyStatement({
+        actions: ['sts:AssumeRole'],
+        resources: [roleToAssume.roleArn]
+    }))
+
     return deployBuildSpec;
+
+}
+
+export function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
+    const replicateBuildspec = new codebuild.PipelineProject(scope, `replicate-to-2nd-region-ecr`, {
+        environment: {
+            buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
+            privileged: true
+        },
+        buildSpec: codebuild.BuildSpec.fromObject({
+            version: "0.2",
+            phases: {
+                build: {
+                    commands: [
+                        `$(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)`,
+                        "IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION",
+                        `srcImage=${originRepo.repositoryUri}/$IMAGE_TAG`,
+                        `docker pull $srcImage`,
+                        `targetImage=${targetRepo.repositoryUri}/$IMAGE_TAG`,
+                        `docker tag $srcImage $targetImage`,
+                        `docker push $targetImage`
+                    ]
+                }
+            }  
+        })
+    });
+
+    return replicateBuildspec;
 }
