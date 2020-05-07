@@ -3,7 +3,8 @@ import 'source-map-support/register';
 import * as cdk from '@aws-cdk/core';
 import { ClusterStack } from '../lib/cluster-stack';
 import { ContainerStack } from '../lib/container-stack';
-import { CicdForPrimaryRegionStack } from '../lib/cicd-for-primary-region-stack';
+import { CicdStack } from '../lib/cicd-stack';
+
 
 const app = new cdk.App();
 
@@ -17,4 +18,6 @@ new ContainerStack(app, `ContainerStack-${primaryRegion.region}`, {env: primaryR
 const secondaryCluster = new ClusterStack(app, `ClusterStack-${secondaryRegion.region}`, {env: secondaryRegion });
 new ContainerStack(app, `ContainerStack-${secondaryRegion.region}`, {env: secondaryRegion, cluster: secondaryCluster.cluster });
 
-new CicdForPrimaryRegionStack(app, `CicdForPrimaryStack`, {env: primaryRegion, cluster: primaryCluster.cluster, roleFor2ndRegionDeployment: secondaryCluster.roleFor2ndRegionDeployment});
+new CicdStack(app, `CicdStack`, {env: primaryRegion, cluster: primaryCluster.cluster ,
+                                    firstRegionRole: primaryCluster.firstRegionRole,
+                                    secondRegionRole: secondaryCluster.secondRegionRole});

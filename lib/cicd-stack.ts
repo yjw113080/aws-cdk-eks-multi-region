@@ -5,35 +5,43 @@ import codepipeline = require('@aws-cdk/aws-codepipeline');
 import pipelineAction = require('@aws-cdk/aws-codepipeline-actions');
 import * as iam from '@aws-cdk/aws-iam';
 import { codeToECRspec, deployToEKSspec, deployTo2ndClusterspec } from '../utils/buildspecs';
-import { PropForCicd } from './cluster-stack';
+import { CicdProps } from './cluster-stack';
 
-export class CicdForPrimaryRegionStack extends cdk.Stack {
 
-    constructor(scope: cdk.Construct, id: string, props: PropForCicd) {
+export class CicdStack extends cdk.Stack {
+
+    constructor(scope: cdk.Construct, id: string, props: CicdProps) {
         super(scope, id, props);
+
         const primaryRegion = 'ap-northeast-1';
         const secondaryRegion = 'us-east-1';
 
         const helloPyRepo = new codecommit.Repository(this, 'hello-py-for-demogo', {
             repositoryName: `hello-py-${cdk.Stack.of(this).region}`
         });
+        
         new cdk.CfnOutput(this, `codecommit-uri`, {
             exportName: 'CodeCommitURL',
             value: helloPyRepo.repositoryCloneUrlHttp
         });
 
-
         const ecrForMainRegion = new ecr.Repository(this, `ecr-for-hello-py`);
+
         const buildForECR = codeToECRspec(this, ecrForMainRegion.repositoryUri);
         ecrForMainRegion.grantPullPush(buildForECR.role!);
-
-        const deployToMainCluster = deployToEKSspec(this, primaryRegion, props.cluster, ecrForMainRegion);
-        const deployTo2ndCluster = deployTo2ndClusterspec(this, secondaryRegion, ecrForMainRegion, props.roleFor2ndRegionDeployment);
-
-        deployTo2ndCluster.addToRolePolicy(new iam.PolicyStatement({
+        
+        const deployToMainCluster = deployToEKSspec(this, primaryRegion, ecrForMainRegion, props.firstRegionRole);
+        deployToMainCluster.addToRolePolicy(new iam.PolicyStatement({
             actions: ['sts:AssumeRole'],
-            resources: [props.roleFor2ndRegionDeployment.roleArn]
+            resources: [props.firstRegionRole.roleArn]
         }))
+
+
+        const deployTo2ndCluster = deployTo2ndClusterspec(this, secondaryRegion, ecrForMainRegion, props.secondRegionRole);
+        deployTo2ndCluster.addToRolePolicy(new iam.PolicyStatement({
+                    actions: ['sts:AssumeRole'],
+                    resources: [props.secondRegionRole.roleArn]
+                }));
 
         const sourceOutput = new codepipeline.Artifact();
         new codepipeline.Pipeline(this, 'repo-to-ecr-hello-py', {
@@ -61,23 +69,23 @@ export class CicdForPrimaryRegionStack extends cdk.Stack {
                     })]
                 },
                 {
-                    stageName: 'ApprovalToReplicate',
+                    stageName: 'ApproveToDeployTo2ndRegion',
                     actions: [ new pipelineAction.ManualApprovalAction({
-                        actionName: 'ApproveToReplicateTo2ndRegion'
+                            actionName: 'ApproveToDeployTo2ndRegion'
                     })]
                 },
                 {
-                    stageName: 'Deploy2ndRegion',
+                    stageName: 'DeployTo2ndRegionCluster',
                     actions: [ new pipelineAction.CodeBuildAction({
-                        actionName: 'Deploy2ndRegion',
+                        actionName: 'DeployTo2ndRegionCluster',
                         input: sourceOutput,
                         project: deployTo2ndCluster
                     })]
                 }
                 
-                
             ]
         });
+        
 
     }
 }

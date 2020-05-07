@@ -4,46 +4,57 @@ import * as eks from '@aws-cdk/aws-eks';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import { PhysicalName } from '@aws-cdk/core';
 
-
 export class ClusterStack extends cdk.Stack {
   public readonly cluster: eks.Cluster;
-  public readonly roleFor2ndRegionDeployment: iam.Role;
+  public readonly firstRegionRole: iam.Role;
+  public readonly secondRegionRole: iam.Role;
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
-    const primaryRegion = 'ap-northeast-1';
 
     const clusterAdmin = new iam.Role(this, 'AdminRole', {
       assumedBy: new iam.AccountRootPrincipal()
       });
 
+    const primaryRegion = 'ap-northeast-1';
+
     const cluster = new eks.Cluster(this, 'demogo-cluster', {
-        clusterName: `demogo`,
-        mastersRole: clusterAdmin,
-        defaultCapacity: 2,
-        defaultCapacityInstance: cdk.Stack.of(this).region==primaryRegion ? new ec2.InstanceType('r5.xlarge') : new ec2.InstanceType('m5.xlarge')
+      clusterName: `demogo`,
+      mastersRole: clusterAdmin,
+      defaultCapacity: 2,
+      defaultCapacityInstance: cdk.Stack.of(this).region==primaryRegion? 
+                                new ec2.InstanceType('r5.xlarge') : new ec2.InstanceType('m5.2xlarge')
     });
 
     this.cluster = cluster;
 
-    const roleForCodebuild = new iam.Role(this, 'for-2nd-region', {
-      roleName: PhysicalName.GENERATE_IF_NEEDED,
-      assumedBy: new iam.AccountRootPrincipal()
-    });
-    
-    if (cdk.Stack.of(this).region!=primaryRegion) 
-      this.cluster.awsAuth.addMastersRole(roleForCodebuild)
-    
-    this.roleFor2ndRegionDeployment = roleForCodebuild;
+    if (cdk.Stack.of(this).region==primaryRegion) {
+      this.firstRegionRole = createDeployRole(this, `for-1st-region`, cluster);
+    }
+    else {
+      this.secondRegionRole = createDeployRole(this, `for-2nd-region`, cluster);
+    }
     
   }
+}
+
+function createDeployRole(scope: cdk.Construct, id: string, cluster: eks.Cluster): iam.Role {
+  const role = new iam.Role(scope, id, {
+    roleName: PhysicalName.GENERATE_IF_NEEDED,
+    assumedBy: new iam.AccountRootPrincipal()
+  });
+  cluster.awsAuth.addMastersRole(role);
+
+  return role;
 }
 
 export interface EksProps extends cdk.StackProps {
   cluster: eks.Cluster
 }
 
-export interface PropForCicd extends cdk.StackProps {
+export interface CicdProps extends cdk.StackProps {
   cluster: eks.Cluster,
-  roleFor2ndRegionDeployment: iam.Role
+  firstRegionRole: iam.Role,
+  secondRegionRole: iam.Role
 }
+
