@@ -21,6 +21,7 @@ export class ClusterStack extends cdk.Stack {
     const cluster = new eks.Cluster(this, 'demogo-cluster', {
       clusterName: `demogo`,
       mastersRole: clusterAdmin,
+      version: '1.14',
       defaultCapacity: 2,
       defaultCapacityInstance: cdk.Stack.of(this).region==primaryRegion? 
                                 new ec2.InstanceType('r5.xlarge') : new ec2.InstanceType('m5.2xlarge')
