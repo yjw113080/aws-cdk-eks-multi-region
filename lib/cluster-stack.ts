@@ -29,7 +29,7 @@ export class ClusterStack extends cdk.Stack {
 
     cluster.addCapacity('spot-group', {
       instanceType: new ec2.InstanceType('m5.xlarge'),
-      spotPrice: cdk.Stack.of(this).region==primaryRegion ? '0.0699' : '0.0805'
+      spotPrice: cdk.Stack.of(this).region==primaryRegion ? '0.248' : '0.192'
     });
     
     this.cluster = cluster;
