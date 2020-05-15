@@ -13,7 +13,7 @@ export class CicdStack extends cdk.Stack {
         super(scope, id, props);
 
         const primaryRegion = 'ap-northeast-1';
-        const secondaryRegion = 'us-east-1';
+        const secondaryRegion = 'us-west-2';
 
         const helloPyRepo = new codecommit.Repository(this, 'hello-py-for-demogo', {
             repositoryName: `hello-py-${cdk.Stack.of(this).region}`
