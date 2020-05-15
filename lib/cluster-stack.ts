@@ -22,10 +22,15 @@ export class ClusterStack extends cdk.Stack {
       clusterName: `demogo`,
       mastersRole: clusterAdmin,
       version: '1.14',
-      defaultCapacity: 2,
-      defaultCapacityInstance: cdk.Stack.of(this).region==primaryRegion? 
-                                new ec2.InstanceType('r5.xlarge') : new ec2.InstanceType('m5.2xlarge')
+      defaultCapacity: 0
     });
+
+    cluster.addNodegroup('default-group', {
+      instanceType: cdk.Stack.of(this).region==primaryRegion? 
+                    new ec2.InstanceType('r5.2xlarge') : new ec2.InstanceType('m5.2xlarge'),
+      minSize: 2,
+      maxSize: 4
+    })
 
     cluster.addCapacity('spot-group', {
       instanceType: new ec2.InstanceType('m5.xlarge'),
