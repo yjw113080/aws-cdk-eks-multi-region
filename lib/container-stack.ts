@@ -16,7 +16,8 @@ export class ContainerStack extends cdk.Stack {
 
     cluster.addChart(`metrics-server`, {
       repository: stable,
-      chart: 'metrics-server'
+      chart: 'metrics-server',
+      release: 'metrics-server'
     });
 
   }
