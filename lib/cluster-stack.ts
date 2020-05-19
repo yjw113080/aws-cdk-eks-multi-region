@@ -12,25 +12,19 @@ export class ClusterStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    const primaryRegion = 'ap-northeast-1';
+
     const clusterAdmin = new iam.Role(this, 'AdminRole', {
       assumedBy: new iam.AccountRootPrincipal()
       });
 
-    const primaryRegion = 'ap-northeast-1';
-
     const cluster = new eks.Cluster(this, 'demogo-cluster', {
       clusterName: `demogo`,
       mastersRole: clusterAdmin,
-      version: '1.14',
-      defaultCapacity: 0
+      defaultCapacity: 2,
+      defaultCapacityInstance: cdk.Stack.of(this).region==primaryRegion? 
+                                  new ec2.InstanceType('r5.2xlarge') : new ec2.InstanceType('m5.2xlarge')
     });
-
-    cluster.addNodegroup('default-group', {
-      instanceType: cdk.Stack.of(this).region==primaryRegion? 
-                    new ec2.InstanceType('r5.2xlarge') : new ec2.InstanceType('m5.2xlarge'),
-      minSize: 2,
-      maxSize: 4
-    })
 
     cluster.addCapacity('spot-group', {
       instanceType: new ec2.InstanceType('m5.xlarge'),
