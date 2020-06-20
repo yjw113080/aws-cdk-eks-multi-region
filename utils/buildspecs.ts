@@ -1,9 +1,10 @@
 import codebuild = require('@aws-cdk/aws-codebuild');
 import * as iam from '@aws-cdk/aws-iam';
 import * as cdk from '@aws-cdk/core';
-import * as eks from '@aws-cdk/aws-eks';
 import { PipelineProject } from '@aws-cdk/aws-codebuild';
 import * as ecr from '@aws-cdk/aws-ecr';
+import * as eks from '@aws-cdk/aws-eks';
+
 
 export function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineProject {
     const buildForECR = new codebuild.PipelineProject(scope, `build-to-ecr`, { 
@@ -44,7 +45,7 @@ export function codeToECRspec (scope: cdk.Construct, apprepo: string) :PipelineP
 
 }
 
-export function deployToEKSspec (scope: cdk.Construct, region: string, apprepo: ecr.IRepository, roleToAssume: iam.Role) :PipelineProject {
+export function deployToEKSspec (scope: cdk.Construct, region: string, cluster: eks.Cluster, apprepo: ecr.IRepository, roleToAssume: iam.Role) :PipelineProject {
     
     const deployBuildSpec = new codebuild.PipelineProject(scope, `deploy-to-eks-${region}`, {
         environment: {
@@ -54,7 +55,7 @@ export function deployToEKSspec (scope: cdk.Construct, region: string, apprepo: 
         },
         environmentVariables: { 
             'REGION': { value:  region },
-            'CLUSTER_NAME': {  value: `demogo` },
+            'CLUSTER_NAME': {  value: cluster.clusterName },
             'ECR_REPO_URI': {  value: apprepo.repositoryUri } ,
         },
         buildSpec: codebuild.BuildSpec.fromObject({
@@ -94,29 +95,3 @@ export function deployToEKSspec (scope: cdk.Construct, region: string, apprepo: 
 
 }
 
-export function replicateECRspec (scope: cdk.Construct, originRepo: ecr.IRepository, targetRepo: ecr.IRepository):PipelineProject {
-    const replicateBuildspec = new codebuild.PipelineProject(scope, `replicate-to-2nd-region-ecr`, {
-        environment: {
-            buildImage: codebuild.LinuxBuildImage.UBUNTU_14_04_DOCKER_18_09_0,
-            privileged: true
-        },
-        buildSpec: codebuild.BuildSpec.fromObject({
-            version: "0.2",
-            phases: {
-                build: {
-                    commands: [
-                        `$(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)`,
-                        "IMAGE_TAG=$CODEBUILD_RESOLVED_SOURCE_VERSION",
-                        `srcImage=${originRepo.repositoryUri}/$IMAGE_TAG`,
-                        `docker pull $srcImage`,
-                        `targetImage=${targetRepo.repositoryUri}/$IMAGE_TAG`,
-                        `docker tag $srcImage $targetImage`,
-                        `docker push $targetImage`
-                    ]
-                }
-            }  
-        })
-    });
-
-    return replicateBuildspec;
-}

@@ -16,7 +16,7 @@ export class ClusterStack extends cdk.Stack {
 
     const clusterAdmin = new iam.Role(this, 'AdminRole', {
       assumedBy: new iam.AccountRootPrincipal()
-      });
+    });
 
     const cluster = new eks.Cluster(this, 'demogo-cluster', {
       clusterName: `demogo`,
@@ -58,8 +58,8 @@ export interface EksProps extends cdk.StackProps {
 }
 
 export interface CicdProps extends cdk.StackProps {
-  cluster: eks.Cluster,
+  firstRegionCluster: eks.Cluster,
+  secondRegionCluster: eks.Cluster,
   firstRegionRole: iam.Role,
   secondRegionRole: iam.Role
 }
-

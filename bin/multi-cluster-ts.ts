@@ -18,6 +18,8 @@ new ContainerStack(app, `ContainerStack-${primaryRegion.region}`, {env: primaryR
 const secondaryCluster = new ClusterStack(app, `ClusterStack-${secondaryRegion.region}`, {env: secondaryRegion });
 new ContainerStack(app, `ContainerStack-${secondaryRegion.region}`, {env: secondaryRegion, cluster: secondaryCluster.cluster });
 
-new CicdStack(app, `CicdStack`, {env: primaryRegion, cluster: primaryCluster.cluster ,
-                                    firstRegionRole: primaryCluster.firstRegionRole,
-                                    secondRegionRole: secondaryCluster.secondRegionRole});
+new CicdStack(app, `CicdStack`, {env: primaryRegion, 
+    firstRegionCluster: primaryCluster.cluster,
+    secondRegionCluster: secondaryCluster.cluster,
+    firstRegionRole: primaryCluster.firstRegionRole,
+    secondRegionRole: secondaryCluster.secondRegionRole});

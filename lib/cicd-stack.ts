@@ -29,8 +29,8 @@ export class CicdStack extends cdk.Stack {
         const buildForECR = codeToECRspec(this, ecrForMainRegion.repositoryUri);
         ecrForMainRegion.grantPullPush(buildForECR.role!);
         
-        const deployToMainCluster = deployToEKSspec(this, primaryRegion, ecrForMainRegion, props.firstRegionRole);
-        const deployTo2ndCluster = deployToEKSspec(this, secondaryRegion, ecrForMainRegion, props.secondRegionRole);
+        const deployToMainCluster = deployToEKSspec(this, primaryRegion, props.firstRegionCluster, ecrForMainRegion, props.firstRegionRole);
+        const deployTo2ndCluster = deployToEKSspec(this, secondaryRegion, props.secondRegionCluster, ecrForMainRegion, props.secondRegionRole);
 
 
         const sourceOutput = new codepipeline.Artifact();
