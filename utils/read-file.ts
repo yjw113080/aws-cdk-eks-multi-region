@@ -10,7 +10,7 @@ export function readYamlFromDir(dir: string, cluster: eks.Cluster) {
       if (data != undefined) {
         let i=0;
         yaml.loadAll(data).forEach((item) => {
-          cluster.addResource(file.substr(0,file.length-5)+i, item);
+          cluster.addManifest(file.substr(0,file.length-5)+i, item);
           i++;
         })
       }
