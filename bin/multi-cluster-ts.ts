@@ -4,6 +4,7 @@ import * as cdk from '@aws-cdk/core';
 import { ClusterStack } from '../lib/cluster-stack';
 import { ContainerStack } from '../lib/container-stack';
 import { CicdStack } from '../lib/cicd-stack';
+import { SecurityStack } from '../lib/security-stack';
 
 
 const app = new cdk.App();
@@ -23,3 +24,7 @@ new CicdStack(app, `CicdStack`, {env: primaryRegion,
     secondRegionCluster: secondaryCluster.cluster,
     firstRegionRole: primaryCluster.firstRegionRole,
     secondRegionRole: secondaryCluster.secondRegionRole});
+
+new SecurityStack(app, 'SecurityStack', {env: primaryRegion, 
+    cluster: primaryCluster.cluster, 
+    deployRole: primaryCluster.deployRole});
