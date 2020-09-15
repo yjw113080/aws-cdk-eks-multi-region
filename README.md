@@ -1,7 +1,7 @@
 # Manage your EKS Cluster with CDK
-This repository holds the full code after following the steps in *[Manage your EKS Cluster with CDK](http://demogo-multiregion-eks.s3-website.ap-northeast-2.amazonaws.com/ko/)* Hands-on Lab.
+This repository holds the full code after following the steps in *[Manage your EKS Cluster with CDK](https://cdk-eks-devops.workshop.aws/ko/)* Hands-on Lab.
 
-Please follow [this link](http://demogo-multiregion-eks.s3-website.ap-northeast-2.amazonaws.com/ko/) to play with the lab. :)
+Please follow [this link](https://cdk-eks-devops.workshop.aws/ko/) to play with the lab. :)
 
 
 ## Related Repository
