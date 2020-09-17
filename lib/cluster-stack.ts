@@ -8,7 +8,6 @@ export class ClusterStack extends cdk.Stack {
   public readonly cluster: eks.Cluster;
   public readonly firstRegionRole: iam.Role;
   public readonly secondRegionRole: iam.Role;
-  public readonly deployRole: iam.Role;
 
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -36,7 +35,6 @@ export class ClusterStack extends cdk.Stack {
     if (cdk.Stack.of(this).region==primaryRegion) {
       const firstRegionRole = createDeployRole(this, `for-1st-region`, cluster);
       this.firstRegionRole = firstRegionRole
-      this.deployRole = firstRegionRole
     }
     else {
       this.secondRegionRole = createDeployRole(this, `for-2nd-region`, cluster);
@@ -65,9 +63,4 @@ export interface CicdProps extends cdk.StackProps {
   secondRegionCluster: eks.Cluster,
   firstRegionRole: iam.Role,
   secondRegionRole: iam.Role
-}
-
-export interface SecurityProps extends cdk.StackProps {
-  cluster: eks.Cluster,
-  deployRole: iam.Role
 }
