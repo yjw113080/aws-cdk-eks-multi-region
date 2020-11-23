@@ -14,7 +14,7 @@ export class ContainerStack extends cdk.Stack {
     readYamlFromDir(commonFolder, cluster);
     readYamlFromDir(regionFolder, cluster);
 
-    cluster.addChart(`metrics-server`, {
+    cluster.addHelmChart(`metrics-server`, {
       repository: stable,
       chart: 'metrics-server',
       release: 'metrics-server'

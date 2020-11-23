@@ -25,7 +25,7 @@ export class ClusterStack extends cdk.Stack {
       defaultCapacity: 2
         });
 
-    cluster.addCapacity('spot-group', {
+    cluster.addAutoScalingGroupCapacity('spot-group', {
       instanceType: new ec2.InstanceType('m5.xlarge'),
       spotPrice: cdk.Stack.of(this).region==primaryRegion ? '0.248' : '0.192'
     });
