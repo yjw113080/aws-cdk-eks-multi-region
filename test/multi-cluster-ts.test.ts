@@ -13,16 +13,16 @@ test('Empty Stack', () => {
     }, MatchStyle.EXACT))
 });
 
-test('Primary Region', () => {
-    const app = new cdk.App();
-    // WHEN
-    const primaryRegion = {account: "xxxxxx", region: 'ap-northeast-1'};
-    //const secondaryRegion = {account: "xxxxxx", region: 'us-west-2'};
-    const primaryCluster = new ClusterStack(app, 'MyTestStack', {env: primaryRegion });
+// test('Primary Region', () => {
+//     const app = new cdk.App();
+//     // WHEN
+//     const primaryRegion = {account: "xxxxxx", region: 'ap-northeast-1'};
+//     //const secondaryRegion = {account: "xxxxxx", region: 'us-west-2'};
+//     const primaryCluster = new ClusterStack(app, 'MyTestStack', {env: primaryRegion });
 
-    const stack = new ContainerStack(app, `ContainerStack-${primaryRegion.region}`, {env: primaryRegion, cluster: primaryCluster.cluster });
-    // THEN
-    const cfn = SynthUtils.toCloudFormation(stack);
-    expect(cfn).toMatchSnapshot();
+//     const stack = new ContainerStack(app, `ContainerStack-${primaryRegion.region}`, {env: primaryRegion, cluster: primaryCluster.cluster });
+//     // THEN
+//     const cfn = SynthUtils.toCloudFormation(stack);
+//     expect(cfn).toMatchSnapshot();
 
-});
+// });
