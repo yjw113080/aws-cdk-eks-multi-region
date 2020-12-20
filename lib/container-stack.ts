@@ -6,18 +6,21 @@ export class ContainerStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props: EksProps) {
     super(scope, id, props);
 
-    const stable = 'https://kubernetes-charts.storage.googleapis.com/';
     const cluster = props.cluster;
+
     const commonFolder = './yaml-common/';
     const regionFolder = `./yaml-${cdk.Stack.of(this).region}/`;
 
     readYamlFromDir(commonFolder, cluster);
     readYamlFromDir(regionFolder, cluster);
 
-    cluster.addHelmChart(`metrics-server`, {
-      repository: stable,
-      chart: 'metrics-server',
-      release: 'metrics-server'
+    cluster.addHelmChart(`flux`, {
+      repository: 'https://charts.fluxcd.io',
+      chart: 'flux',
+      release: 'flux',
+      values: {
+        'git.url':'git@github.com:org/repo'
+      }
     });
 
   }
