@@ -19,22 +19,25 @@ export class ClusterStack extends cdk.Stack {
     });
 
     const cluster = new eks.Cluster(this, 'demogo-cluster', {
-      clusterName: 'demogo',
-      version: eks.KubernetesVersion.V1_16,
+      clusterName: 'demo',
+      version: eks.KubernetesVersion.V1_21,
       mastersRole: clusterAdmin,
       defaultCapacity: 2
-        });
-
-    cluster.addAutoScalingGroupCapacity('spot-group', {
-      instanceType: new ec2.InstanceType('m5.xlarge'),
-      spotPrice: cdk.Stack.of(this).region==primaryRegion ? '0.248' : '0.192'
     });
+
+    cluster.addNodegroupCapacity('spot-ng', {
+      instanceTypes: [
+        new ec2.InstanceType('m5.large'),
+        new ec2.InstanceType('m5a.large')
+      ],
+      minSize: 2,
+      capacityType: eks.CapacityType.SPOT
+    })
     
     this.cluster = cluster;
 
     if (cdk.Stack.of(this).region==primaryRegion) {
-      const firstRegionRole = createDeployRole(this, `for-1st-region`, cluster);
-      this.firstRegionRole = firstRegionRole
+      this.firstRegionRole = createDeployRole(this, `for-1st-region`, cluster);
     }
     else {
       this.secondRegionRole = createDeployRole(this, `for-2nd-region`, cluster);
